@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const space = Space_Grotesk({ subsets: ["latin"], variable: "--font-display" });
 
 export const metadata: Metadata = {
   title: "Snake 3D Minimalista",
@@ -17,7 +13,7 @@ export default function RootLayout({
   children: ReactNode;
 }) {
   return (
-    <html lang="es" className={`${inter.variable} ${space.variable}`}>
+    <html lang="es">
       <body className="min-h-screen bg-bg text-zinc-100 antialiased">
         {children}
       </body>

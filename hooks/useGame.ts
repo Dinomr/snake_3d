@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Direction, GameMode } from "@/lib/types";
-import type { GameState, GameOverReason } from "@/lib/game/engine";
-import { initGame, stepGame, tickMs } from "@/lib/game/engine";
+import { initGame, stepGame, tickMs, type GameState, type GameOverReason, MAX_QUEUED_DIRECTIONS } from "@/lib/game/engine";
 import {
   GRID_SIZE,
   REVERSE_SHRINK_INTERVAL_MS,
@@ -130,7 +129,7 @@ export function useGame() {
       setOverReason(null);
       setSaved(false);
       setNewBest(false);
-      gameRef.current.pendingDirection = null;
+      gameRef.current.pendingDirections = [];
       setPhase("playing");
       phaseRef.current = "playing";
       window.localStorage.setItem(LAST_MODE_KEY, gameMode);
@@ -140,8 +139,10 @@ export function useGame() {
   );
 
   const queueDirection = useCallback((dir: Direction) => {
-    if (gameRef.current && (phaseRef.current === "playing" || phaseRef.current === "paused")) {
-      gameRef.current.pendingDirection = dir;
+    const g = gameRef.current;
+    if (!g || (phaseRef.current !== "playing" && phaseRef.current !== "paused")) return;
+    if (g.pendingDirections.length < MAX_QUEUED_DIRECTIONS) {
+      g.pendingDirections.push(dir);
     }
   }, []);
 

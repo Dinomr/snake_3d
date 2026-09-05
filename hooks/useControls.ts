@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Direction } from "@/lib/types";
 
 const MIN_SWIPE_DISTANCE = 40;

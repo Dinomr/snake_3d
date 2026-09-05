@@ -44,7 +44,7 @@ export type GameState = {
   snake: Coordinate[];
   previousSnake: Coordinate[];
   direction: Direction;
-  pendingDirection: Direction | null;
+  pendingDirections: Direction[];
   food: Coordinate;
   obstacles: Coordinate[];
   powerUps: PowerUp[];
@@ -64,6 +64,9 @@ export type GameState = {
 };
 
 const POWER_UP_TYPES: PowerUpType[] = ["speed", "magnet", "double"];
+
+/** Máximo de direcciones en cola pendientes de aplicar. */
+export const MAX_QUEUED_DIRECTIONS = 3;
 
 export function nextId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -93,7 +96,7 @@ export function initGame(mode: GameMode, round = 0): GameState {
     snake,
     previousSnake: snake.map((c) => ({ ...c })),
     direction: "right",
-    pendingDirection: null,
+    pendingDirections: [],
     food: { x: center + 3, y: center },
     obstacles,
     powerUps: [],
@@ -170,10 +173,24 @@ export function stepGame(
 
   state = refreshPowerUps(state, now);
 
-  if (state.pendingDirection && !isOpposite(state.pendingDirection, state.direction)) {
-    state.direction = state.pendingDirection;
+  // Aplica la primera dirección encolada que no invierta el sentido.
+  // Las restantes se conservan para los siguientes ticks (permite giros rápidos).
+  {
+    let next = state.direction;
+    const queue = state.pendingDirections;
+    let i = 0;
+    while (i < queue.length) {
+      const candidate = queue[i];
+      if (!isOpposite(candidate, next)) {
+        next = candidate;
+        queue.splice(i, 1);
+        break;
+      }
+      i++;
+    }
+    state.direction = next;
+    state.pendingDirections = queue.slice(0, MAX_QUEUED_DIRECTIONS);
   }
-  state.pendingDirection = null;
 
   // Cabeza candidata según dirección.
   const delta = directionToDelta(state.direction);
