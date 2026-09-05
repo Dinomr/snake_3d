@@ -26,12 +26,12 @@ export function useGame() {
   const [timeLeft, setTimeLeft] = useState(TIME_ATTACK_DURATION);
   const [overReason, setOverReason] = useState<GameOverReason | null>(null);
   const [saved, setSaved] = useState(false);
+  const [newBest, setNewBest] = useState(false);
   // tick force de re-render HUD/escena tras cada avance lógico.
   const [tick, setTick] = useState(0);
 
   const gameRef = useRef<GameState | null>(null);
   const phaseRef = useRef<GamePhase>("idle");
-  const directionRef = useRef<Direction | null>(null);
   const bestRef = useRef(0);
 
   useEffect(() => {
@@ -62,10 +62,11 @@ export function useGame() {
       setSaved(false);
       setPhase("gameover");
       phaseRef.current = "gameover";
-      const newBest = Math.max(bestRef.current, g.score);
-      bestRef.current = newBest;
-      setBestScore(newBest);
-      window.localStorage.setItem(BEST_SCORE_KEY, String(newBest));
+      const isNuevo = g.score > bestRef.current;
+      bestRef.current = Math.max(bestRef.current, g.score);
+      setNewBest(isNuevo);
+      setBestScore(bestRef.current);
+      window.localStorage.setItem(BEST_SCORE_KEY, String(bestRef.current));
     },
     [],
   );
@@ -123,12 +124,12 @@ export function useGame() {
       setRound((r) => r + 1);
       const g = initGame(gameMode, round + 1);
       gameRef.current = g;
-      directionRef.current = null;
       setScore(g.score);
       setLength(g.length);
       setTimeLeft(g.timeLeft);
       setOverReason(null);
       setSaved(false);
+      setNewBest(false);
       gameRef.current.pendingDirection = null;
       setPhase("playing");
       phaseRef.current = "playing";
@@ -139,10 +140,8 @@ export function useGame() {
   );
 
   const queueDirection = useCallback((dir: Direction) => {
-    directionRef.current = dir;
     if (gameRef.current && (phaseRef.current === "playing" || phaseRef.current === "paused")) {
-      gameRef.current.pendingDirection =
-        dir as GameState["pendingDirection"];
+      gameRef.current.pendingDirection = dir;
     }
   }, []);
 
@@ -170,6 +169,7 @@ export function useGame() {
     setTimeLeft(g.timeLeft);
     setOverReason(null);
     setSaved(false);
+    setNewBest(false);
     setPhase("playing");
     phaseRef.current = "playing";
     setTick((t) => t + 1);
@@ -202,6 +202,7 @@ export function useGame() {
     length,
     timeLeft,
     overReason,
+    newBest,
     tick,
     game: gameRef.current,
     gameRef,

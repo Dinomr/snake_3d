@@ -1,6 +1,5 @@
 import { GAME_MODES } from "@/lib/types";
 import type { GameMode } from "@/lib/types";
-import { TIME_ATTACK_PENALTY } from "@/lib/constants";
 
 type Props = {
   score: number;

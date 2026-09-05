@@ -13,6 +13,11 @@ const GUARANTEED_FREE: Coordinate[] = [
   { x: 1, y: 2 },
 ];
 
+function isInSpawnSafeZone(x: number, y: number): boolean {
+  const center = Math.floor(GRID_SIZE / 2);
+  return Math.abs(x - center) <= 2 && Math.abs(y - center) <= 2;
+}
+
 export function isInside(x: number, y: number): boolean {
   return x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE;
 }
@@ -91,6 +96,7 @@ function proceduralObstacles(): Coordinate[] {
   for (let y = 0; y < GRID_SIZE; y++) {
     for (let x = 0; x < GRID_SIZE; x++) {
       if (x < 1 || y < 1 || x > GRID_SIZE - 2 || y > GRID_SIZE - 2) continue;
+      if (isInSpawnSafeZone(x, y)) continue;
       if (GUARANTEED_FREE.some((g) => g.x === x && g.y === y)) continue;
       const noise = randomSeed(x * 12.9898 + y * 78.233);
       if (noise < density) {
@@ -110,7 +116,12 @@ function predefinedObstacles(index: number): Coordinate[] {
       const cell = layout[row * 9 + col];
       const x = ox + col;
       const y = oy + row;
-      if (cell === 1 && isInside(x, y) && !GUARANTEED_FREE.some((g) => g.x === x && g.y === y)) {
+      if (
+        cell === 1 &&
+        isInside(x, y) &&
+        !isInSpawnSafeZone(x, y) &&
+        !GUARANTEED_FREE.some((g) => g.x === x && g.y === y)
+      ) {
         obstacles.push({ x, y });
       }
     }

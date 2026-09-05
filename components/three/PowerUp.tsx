@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type ReactElement } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { COLORS } from "@/lib/constants";
@@ -28,7 +28,7 @@ function PowerUpMesh({ type, position }: { type: PowerUpType; position: [number,
     mesh.scale.setScalar(s);
   });
 
-  const geometry = (): React.ReactElement => {
+  const geometry = (): ReactElement => {
     switch (type) {
       case "speed":
         return <octahedronGeometry args={[0.34, 0]} />;

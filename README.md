@@ -1,79 +1,115 @@
-# Prompt para opencode: Snake 3D Minimalista
+# Snake 3D Minimalista
 
-## Contexto y objetivo
+Juego web de **Snake en 3D** con estética minimalista, construido con Next.js (App Router), React Three Fiber y Three.js. Incluye **6 modos de juego**, controles de teclado y táctiles, y un **leaderboard por modo** respaldado por Supabase.
 
-Construye una aplicación web completa de **Snake en 3D con estética minimalista**, lista para desplegar en **Vercel**, usando **Supabase** como backend para el sistema de puntajes (leaderboard). El juego debe sentirse moderno, fluido y visualmente limpio — nada de texturas recargadas ni modelos complejos: formas geométricas simples (cubos, esferas, cápsulas), iluminación suave, paleta de colores reducida y buen uso de sombras/ambient occlusion para dar profundidad sin saturar.
+## Stack
 
-## Stack técnico
+- **Framework**: Next.js 14 (App Router) + TypeScript
+- **Render 3D**: React Three Fiber + drei (sobre Three.js)
+- **Backend de puntajes**: Supabase (Postgres + RLS)
+- **Estilos UI**: Tailwind CSS
 
-- **Framework**: Next.js (App Router), TypeScript.
-- **Render 3D**: React Three Fiber + drei (sobre Three.js). El tablero, la serpiente y la comida son objetos 3D reales, con cámara en perspectiva isométrica o cenital ligeramente inclinada (a definir por opencode, priorizando legibilidad del juego).
-- **Backend de puntajes**: Supabase (Postgres). Crear el esquema, las políticas de RLS y el cliente de conexión.
-- **Despliegue**: configurado para Vercel (variables de entorno vía `.env.local` / Vercel dashboard, `vercel.json` si hace falta).
-- **Estilos UI (HUD, menús)**: Tailwind CSS.
+## Modos de juego
 
-## Mecánica base (modo clásico)
+| Modo | Descripción |
+| --- | --- |
+| Clásico | Come, crece y evita chocar contigo y con los bordes. |
+| Laberinto | Bloques fijos actúan como paredes; los layouts rotan por partida. |
+| Portales | Los bordes están conectados: sal por un lado y reapareces por el opuesto. |
+| Power-ups | Velocidad, imán y doble puntos aparecen junto a la comida normal. |
+| Reverso | Pierdes segmentos con el tiempo; maximiza el puntaje antes de quedarte sin cuerpo. |
+| Contrarreloj | 75 segundos para recolectar la mayor cantidad de comida; chocar resta 5s. |
 
-- Tablero cuadriculado en 3D, serpiente que crece al comer, colisión con el propio cuerpo y con los bordes = game over.
-- Velocidad progresiva: el juego se acelera ligeramente a medida que aumenta el puntaje.
-- HUD minimalista: puntaje actual, mejor puntaje local, modo activo.
+Cada modo guarda sus puntajes en un **leaderboard separado y filtrable**.
 
-## Modos de juego a implementar
+## Setup local
 
-Además del modo clásico, incluir los siguientes modos seleccionables desde un menú principal:
+### 1. Instalar dependencias
 
-1. **Modo Laberinto/Obstáculos**: aparecen bloques fijos en el tablero que actúan como paredes; chocar contra ellos termina la partida. Generar el layout de obstáculos de forma procedural o con unos pocos layouts predefinidos que roten.
-2. **Modo Portales**: los bordes del tablero están conectados (salir por un lado reaparece por el lado opuesto), sin colisión de borde.
-3. **Power-ups**: ítems especiales que aparecen ocasionalmente en el tablero junto a la comida normal:
-   - Velocidad (acelera o ralentiza temporalmente).
-   - Imán (atrae la comida cercana hacia la serpiente por un tiempo limitado).
-   - Doble puntos (la siguiente comida vale el doble).
-4. **Modo Reverso**: la serpiente pierde segmentos con el tiempo en lugar de crecer indefinidamente; el objetivo es sobrevivir y maximizar puntaje antes de quedarse sin cuerpo.
-5. **Modo Contrarreloj (Time Attack)**: partida a tiempo fijo (ej. 60-90 segundos); el objetivo es maximizar la comida recolectada antes de que se acabe el reloj, sin condición de derrota por colisión con el cuerpo (o con una penalización de tiempo en vez de game over, a criterio de diseño).
+```bash
+npm install
+```
 
-Cada modo debe guardar su puntaje en un leaderboard **separado** (filtrable por modo).
+### 2. Variables de entorno
 
-## Sistema de puntajes (Supabase)
+Copia el archivo de ejemplo:
 
-- Sin autenticación de cuentas: el jugador ingresa un **nickname simple** antes de enviar su puntaje al terminar la partida.
-- Tabla `scores` con al menos: `id`, `nickname`, `score`, `game_mode`, `created_at`.
-- Políticas de RLS: permitir `insert` público (con alguna validación básica anti-abuso, por ejemplo límites de longitud de nickname y rango razonable de puntaje) y `select` público para mostrar el leaderboard.
-- Leaderboard visible en UI: top puntajes globales, filtrable por modo de juego.
-- Documentar el SQL de creación de la tabla y políticas para poder correrlo directamente en el editor SQL de Supabase.
+```bash
+cp .env.local.example .env.local
+```
+
+Completa con los datos de tu proyecto de Supabase (ver sección siguiente):
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://TU-PROYECTO.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=TU-ANON-KEY
+```
+
+> Sin estas variables la app funciona igual (solo el leaderboard queda desactivado y se usa el récord local).
+
+### 3. Ejecutar
+
+```bash
+npm run dev
+```
+
+Abre [http://localhost:3000](http://localhost:3000).
+
+## Supabase
+
+### Crear la tabla y las políticas RLS
+
+1. Crea un proyecto en [supabase.com](https://supabase.com).
+2. Ve a **SQL Editor** > **New query**.
+3. Copia el contenido de [`sql/schema.sql`](./sql/schema.sql) y ejecútalo.
+4. Ve a **Settings** > **API** y copia la **Project URL** y la **anon key** en tu `.env.local`.
+
+El esquema crea la tabla `scores` con:
+
+- `id` (uuid, PK)
+- `nickname` (`text`, con CHECK de longitud 1–20)
+- `score` (`integer`, rango 0–1.000.000)
+- `game_mode` (enum: `classic`, `maze`, `portals`, `powerups`, `reverse`, `time_attack`)
+- `created_at` (timestamptz)
+
+Con RLS habilitado y dos políticas públicas:
+
+- `select` para mostrar el leaderboard.
+- `insert` con validación básica anti-abuso (longitud de nickname y rango de puntaje).
+
+## Despliegue en Vercel
+
+1. Sube el repositorio a GitHub/GitLab.
+2. En [Vercel](https://vercel.com) → **Add New…** → **Project** → importa el repo.
+3. Vercel detecta automáticamente Next.js (usa `vercel.json`).
+4. En la configuración del proyecto añade las mismas variables de entorno:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+5. **Deploy**. El build es `next build`.
 
 ## Controles
 
-- **Teclado**: flechas y WASD para escritorio.
-- **Táctil**: swipe (deslizar) en pantallas móviles para cambiar de dirección, con la UI adaptada responsivamente (el tablero y HUD deben verse bien tanto en desktop como en móvil).
+- **Escritorio**: flechas ↑ ↓ ← → o WASD. `Espacio` / `Esc` para pausar.
+- **Móvil**: desliza (swipe) sobre el tablero para cambiar de dirección.
 
-## Estética y diseño 3D
+## Estructura
 
-- Modelos minimalistas: la serpiente puede representarse como una cadena de cápsulas o cubos redondeados; la comida y los power-ups como esferas o formas simples con un color distintivo y quizás una animación sutil (flotación, rotación lenta, pulso de brillo).
-- Paleta de colores reducida y consistente (fondo oscuro o neutro con acentos de color vivo para elementos interactivos).
-- Iluminación suave (luz ambiental + una luz direccional/point light) y sombras suaves para dar sensación de profundidad sin recargar la escena.
-- Transiciones/animaciones sutiles entre menú, partida y pantalla de game over.
+```
+/app                     → rutas (menú, partida por modo, leaderboard)
+/components/three        → componentes 3D (serpiente, tablero, comida, power-ups, obstáculos)
+/components/ui           → HUD, menús, formulario de nickname, tabla de puntajes
+/hooks                   → useGame (motor) y useControls (teclado + táctil)
+/lib/game                → lógica separada del render (movimiento, colisiones, reglas por modo)
+/sql/schema.sql          → tabla scores + políticas RLS
+```
 
-## Estructura sugerida del proyecto
+## Ajustes de diseño
 
-- `/app` — rutas de Next.js (menú, juego, leaderboard).
-- `/components` — componentes 3D (serpiente, tablero, comida, power-ups) y componentes de UI (HUD, menú, formulario de nickname, tabla de puntajes).
-- `/lib/supabase.ts` — cliente de Supabase.
-- `/lib/game` — lógica de juego separada del render (estado del tablero, movimiento, colisiones, reglas por modo).
-- `sql/` — scripts de creación de tabla y políticas RLS.
-- `README.md` — instrucciones de setup local, variables de entorno necesarias y pasos de despliegue en Vercel.
+Las constantes de juego están en [`/lib/constants.ts`](./lib/constants.ts):
 
-## Entregables esperados
-
-1. Proyecto Next.js funcional y tipado en TypeScript.
-2. Los 5 modos de juego adicionales implementados y seleccionables, más el modo clásico.
-3. Integración completa con Supabase para guardar y consultar puntajes por modo.
-4. Controles de teclado y táctiles funcionando correctamente.
-5. Diseño 3D minimalista coherente en todas las pantallas.
-6. Documentación clara para desplegar en Vercel (variables de entorno de Supabase incluidas).
-
-## Preguntas abiertas que opencode puede resolver con su propio criterio de diseño
-
-- Ángulo exacto de cámara y si se permite rotarla ligeramente con el mouse/gesto.
-- Paleta de colores específica (mientras sea minimalista y coherente).
-- Si el modo Reverso termina en game over al quedarse sin cuerpo o si simplemente congela el puntaje final.
-- Cadencia y probabilidad de aparición de power-ups.
+- Velocidad base/velocidad mínima y aceleración progresiva (`BASE_TICK_MS`, `MIN_TICK_MS`).
+- Tamaño del tablero (`GRID_SIZE`).
+- Duración del modo contrarreloj y penalización (`TIME_ATTACK_DURATION`, `TIME_ATTACK_PENALTY`).
+- Cadencia de pérdida de segmentos en modo Reverso (`REVERSE_SHRINK_INTERVAL_MS`).
+- Frecuencia, duración y radio del imán de los power-ups.
+- Paleta de colores (`COLORS`).

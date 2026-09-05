@@ -68,4 +68,4 @@ function GameScene(props: SceneProps) {
 }
 
 // Se carga solo en cliente (necesario para WebGL + React Three Fiber).
-export default dynamic(() => Promise.resolve(GameScene), { ssr: false });
+export default dynamic(async () => ({ default: GameScene }), { ssr: false });

@@ -30,16 +30,21 @@ function directionFromKey(key: string): Direction | null {
 
 /**
  * Hook de controles: teclado (flechas/WASD) + swipe táctil.
- * `onDirection` se invoca con la nueva dirección intencional.
- * También expone `isPaused`/`setPaused` controlado por Espacio o Escape.
+ * `onDirection` recibe la nueva dirección, `onPause` se dispara con Espacio/Escape.
  */
-export function useControls(onDirection: (dir: Direction) => void) {
+export function useControls(
+  onDirection: (dir: Direction) => void,
+  onPause?: () => void,
+) {
   const [enabled, setEnabled] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const togglePause = useCallback(() => setIsPaused((p) => !p), []);
 
   const enable = useCallback(() => setEnabled(true), []);
   const disable = useCallback(() => setEnabled(false), []);
+
+  const onDirectionRef = useRef(onDirection);
+  const onPauseRef = useRef(onPause);
+  onDirectionRef.current = onDirection;
+  onPauseRef.current = onPause;
 
   useEffect(() => {
     if (!enabled) return;
@@ -47,20 +52,17 @@ export function useControls(onDirection: (dir: Direction) => void) {
       const dir = directionFromKey(e.key);
       if (dir) {
         e.preventDefault();
-        onDirection(dir);
+        onDirectionRef.current(dir);
         return;
       }
-      if (e.key === " ") {
+      if (e.key === " " || e.key === "Escape") {
         e.preventDefault();
-        setIsPaused((p) => !p);
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        setIsPaused(true);
+        onPauseRef.current?.();
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [enabled, onDirection]);
+  }, [enabled]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -82,9 +84,9 @@ export function useControls(onDirection: (dir: Direction) => void) {
       if (Math.abs(dx) > MIN_SWIPE_DISTANCE || Math.abs(dy) > MIN_SWIPE_DISTANCE) {
         tracking = false;
         if (Math.abs(dx) > Math.abs(dy)) {
-          onDirection(dx > 0 ? "right" : "left");
+          onDirectionRef.current(dx > 0 ? "right" : "left");
         } else {
-          onDirection(dy > 0 ? "down" : "up");
+          onDirectionRef.current(dy > 0 ? "down" : "up");
         }
       }
     };
@@ -100,7 +102,7 @@ export function useControls(onDirection: (dir: Direction) => void) {
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
     };
-  }, [enabled, onDirection]);
+  }, [enabled]);
 
-  return { enabled: enable, disabled: disable, isPaused, togglePause };
+  return { enable, disable };
 }

@@ -1,4 +1,4 @@
-import { CELL_SIZE, GRID_SIZE, TIME_ATTACK_DURATION, TIME_ATTACK_PENALTY } from "@/lib/constants";
+import { GRID_SIZE } from "@/lib/constants";
 import type { Coordinate, Direction, PowerUp, PowerUpType } from "@/lib/types";
 
 export function serialize(c: Coordinate): string {

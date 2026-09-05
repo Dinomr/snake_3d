@@ -182,15 +182,21 @@ export function stepGame(
     y: state.snake[0].y + delta.y,
   };
 
-  // Imán: redirige el paso hacia la comida cercana.
-  if (state.mode === "powerups" && state.activePowerUps.magnet && state.food) {
+  // Imán: la comida cercana se atrae un paso hacia la cabeza (eje con mayor delta).
+  if (state.mode === "powerups" && state.activePowerUps.magnet) {
     const dx = state.food.x - state.snake[0].x;
     const dy = state.food.y - state.snake[0].y;
-    if (Math.abs(dx) + Math.abs(dy) <= MAGNET_RADIUS_CELLS) {
-      head = {
-        x: state.snake[0].x + Math.sign(dx),
-        y: state.snake[0].y + Math.sign(dy),
-      };
+    if (Math.abs(dx) + Math.abs(dy) > 0 && Math.abs(dx) + Math.abs(dy) <= MAGNET_RADIUS_CELLS) {
+      let target: Coordinate;
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        target = { x: state.food.x - Math.sign(dx), y: state.food.y };
+      } else {
+        target = { x: state.food.x, y: state.food.y - Math.sign(dy) };
+      }
+      const occupied = state.snake.some((s) => s.x === target.x && s.y === target.y);
+      if (!occupied && target.x >= 0 && target.x < GRID_SIZE && target.y >= 0 && target.y < GRID_SIZE) {
+        state.food = target;
+      }
     }
   }
 

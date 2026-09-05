@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { GameMode } from "@/lib/types";
 import { GAME_MODES } from "@/lib/types";
@@ -43,7 +43,7 @@ export function GameOverModal({
   const label = GAME_MODES.find((g) => g.mode === mode)?.label ?? mode;
 
   const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
+    async (e: FormEvent) => {
       e.preventDefault();
       if (!nickname.trim() || submitting) return;
       setSubmitting(true);
